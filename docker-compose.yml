@@ -1,0 +1,5 @@
+services:
+  adn:
+    build: .
+    volumes:
+      - ./results:/results
