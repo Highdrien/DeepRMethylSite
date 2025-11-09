@@ -42,22 +42,49 @@ The output of this is the result mentioned in our research paper.
 
 ## Using Docker (Recommended)
 
-To predict methylation for a single protein sequence (51 characters):
+### Single sequence prediction (51 characters)
 
-**With docker directly:**
+To predict methylation for a single protein sequence of exactly 51 characters:
+
 ```bash
 docker build -t deeprmethylsite .
 docker run --rm deeprmethylsite src/infer.py "PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR"
 ```
 
+The result will be displayed on screen and saved to `/results/infer_result.txt` in the container (mapped to `./results/infer_result.txt` on your host if you mount the volume).
+
+### Long sequence prediction (multiple arginines)
+
+To predict methylation for all arginines in a longer protein sequence:
+
+```bash
+docker build -t deeprmethylsite .
+docker run --rm -v $(pwd)/results:/results deeprmethylsite src/infer.py "YOUR_LONG_PROTEIN_SEQUENCE_HERE"
+```
+
+The script will:
+- Automatically detect all arginine (R) residues in the sequence
+- Extract a 51-character window (25 residues before + R + 25 residues after) for each R
+- Skip R residues that are too close to the sequence boundaries (< 25 residues before or after)
+- Make predictions for all valid windows in batch
+- Display results in a table format
+- Save detailed results to `/results/infer_results.txt`
+
+**Example:**
+```bash
+docker run --rm -v $(pwd)/results:/results deeprmethylsite src/infer.py "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIWAGIKATEAAVSEEFGLAPFLPDQIHFVHSQELLSRYPDLDAKGRERAIAKDLGAVFLVGIGGKLSDGHRHDVRAPDYDDWSTPSELGHAGLNGDILVWNPVLEDAFELSSMGIRVDADTLKHQLALTGDEDRLELEWHQALLRGEMPQTIGGGIGQSRLTMLLLQLPHIGQVQAGVWPAAVRESVPSLL"
+```
+
 ## Dataset Format
 
- If you would like to use DeepRmethylSite to predict Arginine Methylation sites in the protein of your interest, you should prepare your dataset in the same format as the test dataset which is basically a FASTA format. This model works for window size 51 only, meaning for the residue of your interest you should provide 25 resiudes downstream and 25 residues upstream. e.g. if you want to predict whether the 'Arginine' residue in Position 735 in protein Q4KWH8 is methylated or not, the input file should contain 25 residues upstream of R (position 735 in protein Q4KWH8) and 25 residues downstream of R.
- 
- The general format for your dataset should be:
+If you would like to use DeepRmethylSite to predict Arginine Methylation sites in the protein of your interest, you can provide:
 
->sp|Q4KWH8|PLCH1_HUMAN%730%755<br/>
-PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR
+1. **A single 51-character window** (25 residues before + R + 25 residues after) for precise prediction on a specific arginine
+2. **A longer protein sequence** - the script will automatically process all arginines with sufficient context
+
+The model works with window size 51, meaning for each arginine you need 25 residues upstream and 25 residues downstream. For example, if you want to predict whether the 'Arginine' residue in Position 735 in protein Q4KWH8 is methylated or not, you can provide either:
+- The 51-character window: `PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR`
+- The full protein sequence (the script will extract windows automatically)
 
 # Citation:
 Please cite the following paper if you use DeepRMethylsite.
