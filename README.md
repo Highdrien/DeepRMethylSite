@@ -37,8 +37,21 @@ The output of this is the result mentioned in our research paper.
        research, model_best_cnn.h5 and model_best_lstm.h5 to models/weights/.
      - The test datasets are already in data/test/ directory.
      - Run the test script: $python3 src/test.py
-     - Alternatively, use Docker: $docker-compose up --build
- # Prediction for your dataset
+     - Alternatively, use Docker $docker build -t deeprmethylsite . && docker run --rm -v $(pwd)/results:/results deeprmethylsite
+# Prediction for your dataset
+
+## Using Docker (Recommended)
+
+To predict methylation for a single protein sequence (51 characters):
+
+**With docker directly:**
+```bash
+docker build -t deeprmethylsite .
+docker run --rm deeprmethylsite src/infer.py "PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR"
+```
+
+## Dataset Format
+
  If you would like to use DeepRmethylSite to predict Arginine Methylation sites in the protein of your interest, you should prepare your dataset in the same format as the test dataset which is basically a FASTA format. This model works for window size 51 only, meaning for the residue of your interest you should provide 25 resiudes downstream and 25 residues upstream. e.g. if you want to predict whether the 'Arginine' residue in Position 735 in protein Q4KWH8 is methylated or not, the input file should contain 25 residues upstream of R (position 735 in protein Q4KWH8) and 25 residues downstream of R.
  
  The general format for your dataset should be:

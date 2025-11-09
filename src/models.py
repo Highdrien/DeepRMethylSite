@@ -8,12 +8,13 @@ from keras.models import load_model
 from numpy import array, tensordot
 
 
-def load_models(models_dir="models/weights"):
+def load_models(models_dir="models/weights", verbose=True):
     """
     Load LSTM and CNN models.
 
     Args:
         models_dir: Directory containing model weight files
+        verbose: If True, print model summaries
 
     Returns:
         List of loaded models [LSTM, CNN]
@@ -23,8 +24,9 @@ def load_models(models_dir="models/weights"):
 
     models = [load_model(lstm_path), load_model(cnn_path)]
 
-    for i in models:
-        print(i.summary())
+    if verbose:
+        for i in models:
+            print(i.summary())
 
     return models
 

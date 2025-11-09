@@ -11,4 +11,5 @@ COPY models/weights /app/models/weights
 COPY src/ /app/src/
 COPY data/test/ /app/data/test/
 
-CMD ["python", "src/test.py"]
+ENTRYPOINT ["python"]
+CMD ["src/test.py"]

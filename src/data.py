@@ -162,3 +162,38 @@ def load_test_data(data_dir="data/test"):
     cnn_x, cnn_y = load_test_data_cnn(pos_file, neg_file)
 
     return lstm_x, lstm_y, cnn_x, cnn_y
+
+
+def process_single_sequence(sequence):
+    """
+    Process a single protein sequence for prediction.
+
+    Args:
+        sequence: String of protein sequence (must be 51 characters long)
+
+    Returns:
+        Tuple of (lstm_data, cnn_data) as numpy arrays ready for prediction
+    """
+    if len(sequence) != WIN_SIZE:
+        raise ValueError("Sequence must be exactly 51 characters long (window size 51)")
+
+    # Check all characters are valid
+    for char in sequence:
+        if char not in ALPHABET:
+            raise ValueError(
+                "Invalid character '{}' in sequence. Valid characters: {}".format(
+                    char, ALPHABET
+                )
+            )
+
+    # Process for LSTM (window size 21, cut_off2)
+    lstm_seq = sequence[CUT_OFF2:-CUT_OFF2]
+    lstm_encoded = [CHAR_TO_INT[char] for char in lstm_seq]
+    lstm_data = array([lstm_encoded])
+
+    # Process for CNN (window size 39, cut_off1)
+    cnn_seq = sequence[CUT_OFF1:-CUT_OFF1]
+    cnn_encoded = [CHAR_TO_INT[char] for char in cnn_seq]
+    cnn_data = array([cnn_encoded])
+
+    return lstm_data, cnn_data
