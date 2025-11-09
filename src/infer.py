@@ -35,16 +35,18 @@ def find_arginine_positions(sequence):
 def extract_windows_for_arginines(sequence):
     """
     Extract 51-character windows for each arginine that has enough context.
+    Also identifies arginines on sequence boundaries that cannot be predicted.
 
     Args:
         sequence: Protein sequence string (any length)
 
     Returns:
-        List of tuples: (r_position, window_sequence)
-        - r_position: Position of R in original sequence (0-indexed)
-        - window_sequence: 51-character window centered on R
+        Tuple of (valid_windows, boundary_arginines):
+        - valid_windows: List of tuples (r_position, window_sequence) for R with sufficient context
+        - boundary_arginines: List of r_positions (0-indexed) for R without sufficient context
     """
     windows = []
+    boundary_arginines = []
     r_positions = find_arginine_positions(sequence)
 
     for r_pos in r_positions:
@@ -57,8 +59,11 @@ def extract_windows_for_arginines(sequence):
             # Validate window length
             if len(window) == 51:
                 windows.append((r_pos, window))
+        else:
+            # R is on boundary, cannot be predicted
+            boundary_arginines.append(r_pos)
 
-    return windows
+    return windows, boundary_arginines
 
 
 def predict_sequence(sequence, models=None, weights=None):
@@ -136,12 +141,13 @@ def predict_multiple_sequences(sequences, models=None, weights=None):
     return results
 
 
-def save_results_to_file(results, sequence, output_file):
+def save_results_to_file(results, boundary_arginines, sequence, output_file):
     """
     Save prediction results to a file.
 
     Args:
         results: List of tuples (r_position, window, prediction_class, probability)
+        boundary_arginines: List of r_positions that cannot be predicted
         sequence: Original sequence
         output_file: Path to output file
     """
@@ -152,6 +158,7 @@ def save_results_to_file(results, sequence, output_file):
         f.write("Original sequence: {}\n".format(sequence))
         f.write("Sequence length: {} characters\n".format(len(sequence)))
         f.write("Number of arginines analyzed: {}\n".format(len(results)))
+        f.write("Number of boundary arginines (cannot predict): {}\n".format(len(boundary_arginines)))
         f.write("=" * 60 + "\n\n")
 
         f.write(
@@ -171,6 +178,19 @@ def save_results_to_file(results, sequence, output_file):
                     prob,
                 )
             )
+
+        if boundary_arginines:
+            f.write("\n" + "-" * 60 + "\n")
+            f.write("Boundary arginines (insufficient context for prediction):\n")
+            f.write("-" * 60 + "\n")
+            for r_pos in boundary_arginines:
+                # Show context around the R
+                start = max(0, r_pos - 10)
+                end = min(len(sequence), r_pos + 11)
+                context = sequence[start:end]
+                f.write("R at position {}: ...{}... (need 25 residues before and after)\n".format(
+                    r_pos + 1, context
+                ))
 
         f.write("\n" + "=" * 60 + "\n")
 
@@ -241,7 +261,11 @@ def main():
 
         else:
             # Multiple R prediction
-            windows = extract_windows_for_arginines(sequence)
+            windows, boundary_arginines = extract_windows_for_arginines(sequence)
+
+            if not windows and not boundary_arginines:
+                print("No arginines found in the sequence")
+                sys.exit(1)
 
             if not windows:
                 print(
@@ -252,6 +276,13 @@ def main():
                         len(sequence), len(find_arginine_positions(sequence))
                     )
                 )
+                if boundary_arginines:
+                    print("\nBoundary arginines found (cannot predict):")
+                    for r_pos in boundary_arginines:
+                        start = max(0, r_pos - 10)
+                        end = min(len(sequence), r_pos + 11)
+                        context = sequence[start:end]
+                        print("  R at position {}: ...{}...".format(r_pos + 1, context))
                 sys.exit(1)
 
             print("\n" + "=" * 60)
@@ -265,6 +296,8 @@ def main():
                 )
             )
             print("Arginines with sufficient context: {}".format(len(windows)))
+            if boundary_arginines:
+                print("Boundary arginines (cannot predict): {}".format(len(boundary_arginines)))
             print("=" * 60 + "\n")
 
             # Load models once
@@ -303,11 +336,24 @@ def main():
                     )
                 )
 
+            # Display boundary arginines
+            if boundary_arginines:
+                print("\n" + "-" * 60)
+                print("Boundary arginines (insufficient context for prediction):")
+                print("-" * 60)
+                for r_pos in boundary_arginines:
+                    start = max(0, r_pos - 10)
+                    end = min(len(sequence), r_pos + 11)
+                    context = sequence[start:end]
+                    print("R at position {}: ...{}... (need 25 residues before and after)".format(
+                        r_pos + 1, context
+                    ))
+
             print("=" * 60 + "\n")
 
             # Save results to file
             output_file = os.path.join(results_dir, "infer_results.txt")
-            save_results_to_file(results, sequence, output_file)
+            save_results_to_file(results, boundary_arginines, sequence, output_file)
             print("Results saved to: {}".format(output_file))
 
     except ValueError as e:
