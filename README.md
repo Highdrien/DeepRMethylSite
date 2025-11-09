@@ -48,7 +48,7 @@ To predict methylation for a single protein sequence of exactly 51 characters:
 
 ```bash
 docker build -t deeprmethylsite .
-docker run --rm deeprmethylsite src/infer.py "PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR"
+docker run --rm -v $(pwd)/results:/results deeprmethylsite src/infer.py "PKKQLILKVISGQQLPKPPDSMFGDRGEIIDPFVEVEIIGLPVDCCKDQTR"
 ```
 
 The result will be displayed on screen and saved to `/results/infer_result.txt` in the container (mapped to `./results/infer_result.txt` on your host if you mount the volume).
